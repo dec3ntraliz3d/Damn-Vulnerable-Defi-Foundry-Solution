@@ -116,12 +116,11 @@ contract PuppetV2 is Test {
         console.log(unicode"🧨 PREPARED TO BREAK THINGS 🧨");
     }
 
-    function testExploit() public {
-        /** EXPLOIT START **/
-
-        /** EXPLOIT END **/
-        validation();
-    }
+    // function testExploit() public {
+    //     /** EXPLOIT START **/
+    //     /** EXPLOIT END **/
+    //     validation();
+    // }
 
     function validation() internal {
         /** SUCCESS CONDITIONS */

